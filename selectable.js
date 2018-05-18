@@ -75,11 +75,11 @@
      * @param  {Object}   el       HTMLElement
      * @param  {String}   type     Event type
      * @param  {Function} callback Event callback
-     * @param  {Object}   scope    Function scope
+     * @param  {Object}   options event options
      * @return {Void}
      */
-    var on = function(el, type, callback, scope) {
-        el.addEventListener(type, callback, false);
+    var on = function(el, type, callback, options) {
+        el.addEventListener(type, callback, options||{});
     };
 
     /**
@@ -341,6 +341,8 @@
                     opacity: 0, // border will show even at zero width / height
                 }, o.lasso));
             }
+            // Is auto-scroll enabled?
+            this.autoscroll = this.lasso !== false && isObject(o.autoScroll);
 
             if (_touch) {
                 o.toggle = false;
@@ -420,7 +422,7 @@
             on(document, 'keyup', e.keyup);
 
             if (this.autoscroll) {
-                on(this.container, "scroll", e.scroll);
+                on(this.container, "scroll", e.scroll, {passive: true});
             }
 
             // Mobile
@@ -432,9 +434,8 @@
                 on(document, "touchmove", e.drag);
                 on(document, 'mousemove', e.drag);
             }
-
             on(window, 'resize', e.recalculate);
-            on(window, 'scroll', e.recalculate);
+            on(window, 'scroll', e.recalculate, {passive: true});
         },
 
         /**
@@ -470,9 +471,11 @@
          * @return {Void}
          */
         touchstart: function(e) {
-            off(this.container, "mousedown", this.events.start);
+            if (this.lasso) {
+                off(this.container, "mousedown", this.events.start);
 
-            this.start(e);
+                this.start(e);
+            }
         },
 
         /**
@@ -496,7 +499,7 @@
             if (!node || o.disabled) return false;
 
             // allow form inputs to be receive focus
-            if (['INPUT', 'SELECT', 'BUTTON', 'TEXTAREA', 'OPTION'].indexOf(e.target.tagName) === -1) {
+            if ((this.lasso || e.ctrlKey || e.shiftKey) && ['INPUT', 'SELECT', 'BUTTON', 'TEXTAREA', 'OPTION'].indexOf(e.target.tagName) === -1) {
                 e.preventDefault();
             }
 
